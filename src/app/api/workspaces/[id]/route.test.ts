@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { GET, PUT } from "./route";
 
-// Mock the database functions
-vi.mock("@/lib/databse", () => ({
+// Mock the database module
+vi.mock("@/lib/database", () => ({
   getWorkspaceById: vi.fn(),
   updateWorkspace: vi.fn(),
   getWorkspaceFiles: vi.fn(),

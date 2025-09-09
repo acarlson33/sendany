@@ -241,6 +241,9 @@ pnpm build # Build for production
 pnpm start # Production server
 pnpm lint # Linting
 pnpm test # Run tests
+pnpm test:watch # Run tests in watch mode
+pnpm test:ui # Run tests with UI
+pnpm test:coverage # Run tests with coverage report
 ```
 
 ### Stack Auth Configuration

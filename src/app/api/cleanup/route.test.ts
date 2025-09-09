@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { GET, POST } from "./route";
 
-// Mock the database functions
-vi.mock("@/lib/databse", () => ({
+// Mock database
+vi.mock("@/lib/database", () => ({
   getExpiredWorkspaces: vi.fn(),
   deleteWorkspaceCompletely: vi.fn(),
   getUserDriveTokens: vi.fn(),

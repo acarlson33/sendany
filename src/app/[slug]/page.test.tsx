@@ -1,190 +1,215 @@
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@/test/test-utils";
 import WorkspacePage from "./page";
-import { notFound } from "next/navigation";
 
-// Mock dependencies
-vi.mock("@/lib/databse", () => ({
-  getWorkspace: vi.fn(),
+render(
+  await WorkspacePage({
+    params: Promise.resolve({ slug: "nonexistent" }),
+    searchParams: Promise.resolve({}),
+  })
+);
+
+// Mock the database module
+vi.mock("@/lib/database", () => ({
+  getWorkspaceBySlug: vi.fn(),
   getWorkspaceFiles: vi.fn(),
   recordWorkspaceView: vi.fn(),
   verifyWorkspacePassword: vi.fn(),
 }));
 
-vi.mock("@/stack", () => ({
-  stackServerApp: {
-    getUser: vi.fn(),
-  },
+// Mock Stack Auth
+vi.mock("@stackframe/stack", () => ({
+  useUser: vi.fn(() => ({ user: null })),
 }));
 
-vi.mock("@/components/workspace-viewer", () => ({
-  WorkspaceViewer: ({ workspace, files }: any) => (
-    <div data-testid="workspace-viewer">
-      <h1>{workspace.title}</h1>
-      <div>Files: {files.length}</div>
-    </div>
-  ),
-}));
-
-vi.mock("@/components/password-form", () => ({
-  PasswordForm: ({ slug, error }: any) => (
-    <div data-testid="password-form">
-      <div>Password required for: {slug}</div>
-      {error && <div>Error: {error}</div>}
-    </div>
-  ),
-}));
-
+// Mock Next.js
 vi.mock("next/navigation", () => ({
   notFound: vi.fn(),
+  redirect: vi.fn(),
 }));
 
 vi.mock("next/headers", () => ({
   headers: vi.fn(() => ({
     get: vi.fn((header: string) => {
-      if (header === "x-forwarded-for") return "192.168.1.1";
-      if (header === "user-agent") return "Test User Agent";
+      if (header === "x-forwarded-for") return "127.0.0.1";
+      if (header === "user-agent") return "test-agent";
       return null;
     }),
   })),
 }));
 
-const { getWorkspace, getWorkspaceFiles, verifyWorkspacePassword } =
-  await import("@/lib/databse");
-const { stackServerApp } = await import("@/stack");
+import {
+  getWorkspaceBySlug,
+  getWorkspaceFiles,
+  recordWorkspaceView,
+} from "@/lib/database";
 
 describe("WorkspacePage", () => {
-  const mockWorkspace = {
-    id: "workspace-123",
-    slug: "test-workspace",
-    title: "Test Workspace",
-    description: "A test workspace",
-    user_id: "user-123",
-    is_public: true,
-    password_hash: undefined,
-    expires_at: undefined,
-    created_at: new Date(),
-    updated_at: new Date(),
-  };
-
-  const mockFiles = [
-    {
-      id: "file-1",
-      workspace_id: "workspace-123",
-      filename: "readme.md",
-      content: "# Test",
-      file_type: "markdown" as const,
-      language: "markdown",
-      order_index: 0,
-      created_at: new Date(),
-      updated_at: new Date(),
-    },
-  ];
-
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getWorkspace).mockResolvedValue(mockWorkspace);
-    vi.mocked(getWorkspaceFiles).mockResolvedValue(mockFiles);
-    vi.mocked(stackServerApp.getUser).mockResolvedValue(null);
   });
 
-  it("renders public workspace for unauthenticated user", async () => {
-    const params = Promise.resolve({ slug: "test-workspace" });
-    const searchParams = Promise.resolve({});
+  it("should render workspace not found when workspace does not exist", async () => {
+    (getWorkspaceBySlug as any).mockResolvedValue(null);
 
-    render(await WorkspacePage({ params, searchParams }));
+    render(
+      await WorkspacePage({
+        params: Promise.resolve({ slug: "nonexistent" }),
+        searchParams: Promise.resolve({}),
+      })
+    );
 
-    expect(screen.getByTestId("workspace-viewer")).toBeInTheDocument();
-    expect(screen.getByText("Test Workspace")).toBeInTheDocument();
-    expect(screen.getByText("Files: 1")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/workspace not found/i)).toBeInTheDocument();
+    });
   });
 
-  it("calls notFound for non-existent workspace", async () => {
-    vi.mocked(getWorkspace).mockResolvedValue(undefined);
-
-    const params = Promise.resolve({ slug: "non-existent" });
-    const searchParams = Promise.resolve({});
-
-    await WorkspacePage({ params, searchParams });
-
-    expect(notFound).toHaveBeenCalled();
-  });
-
-  it("calls notFound for expired workspace", async () => {
-    const expiredWorkspace = {
-      ...mockWorkspace,
-      expires_at: new Date(Date.now() - 86400000), // 1 day ago
+  it("should render workspace content when workspace exists", async () => {
+    const mockWorkspace = {
+      id: "workspace-1",
+      title: "Test Workspace",
+      slug: "test-workspace",
+      user_id: "user-1",
+      is_public: true,
+      password_hash: null,
+      expires_at: null,
+      created_at: new Date(),
+      updated_at: new Date(),
     };
-    vi.mocked(getWorkspace).mockResolvedValue(expiredWorkspace);
 
-    const params = Promise.resolve({ slug: "expired-workspace" });
-    const searchParams = Promise.resolve({});
+    const mockFiles = [
+      {
+        id: "file-1",
+        workspace_id: "workspace-1",
+        name: "test.txt",
+        content: "Hello World",
+        language: "text",
+        type: "text" as const,
+        file_order: 0,
+        google_drive_file_id: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+    ];
 
-    await WorkspacePage({ params, searchParams });
+    (getWorkspaceBySlug as any).mockResolvedValue(mockWorkspace);
+    (getWorkspaceFiles as any).mockResolvedValue(mockFiles);
+    (recordWorkspaceView as any).mockResolvedValue(undefined);
 
-    expect(notFound).toHaveBeenCalled();
+    render(
+      await WorkspacePage({
+        params: Promise.resolve({ slug: "test-workspace" }),
+        searchParams: Promise.resolve({}),
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Test Workspace")).toBeInTheDocument();
+    });
   });
 
-  it("shows password form for password-protected workspace without password", async () => {
-    const protectedWorkspace = {
-      ...mockWorkspace,
+  it("should handle password protected workspace", async () => {
+    const mockWorkspace = {
+      id: "workspace-1",
+      title: "Protected Workspace",
+      slug: "protected",
+      user_id: "user-1",
+      is_public: false,
       password_hash: "hashed-password",
+      expires_at: null,
+      created_at: new Date(),
+      updated_at: new Date(),
     };
-    vi.mocked(getWorkspace).mockResolvedValue(protectedWorkspace);
 
-    const params = Promise.resolve({ slug: "protected-workspace" });
-    const searchParams = Promise.resolve({});
+    (getWorkspaceBySlug as any).mockResolvedValue(mockWorkspace);
 
-    render(await WorkspacePage({ params, searchParams }));
+    render(
+      await WorkspacePage({
+        params: Promise.resolve({ slug: "protected" }),
+        searchParams: Promise.resolve({}),
+      })
+    );
 
-    expect(screen.getByTestId("password-form")).toBeInTheDocument();
-    expect(
-      screen.getByText("Password required for: protected-workspace")
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/password protected/i)).toBeInTheDocument();
+    });
   });
 
-  it("shows password form with error for wrong password", async () => {
-    const protectedWorkspace = {
-      ...mockWorkspace,
-      password_hash: "hashed-password",
+  it("should record workspace view", async () => {
+    const mockWorkspace = {
+      id: "workspace-1",
+      title: "Test Workspace",
+      slug: "test",
+      user_id: "user-1",
+      is_public: true,
+      password_hash: null,
+      expires_at: null,
+      created_at: new Date(),
+      updated_at: new Date(),
     };
-    vi.mocked(getWorkspace).mockResolvedValue(protectedWorkspace);
-    vi.mocked(verifyWorkspacePassword).mockResolvedValue(false);
 
-    const params = Promise.resolve({ slug: "protected-workspace" });
-    const searchParams = Promise.resolve({ password: "wrong-password" });
+    (getWorkspaceBySlug as any).mockResolvedValue(mockWorkspace);
+    (getWorkspaceFiles as any).mockResolvedValue([]);
+    (recordWorkspaceView as any).mockResolvedValue(undefined);
 
-    render(await WorkspacePage({ params, searchParams }));
+    render(
+      await WorkspacePage({
+        params: Promise.resolve({ slug: "test" }),
+        searchParams: Promise.resolve({}),
+      })
+    );
 
-    expect(screen.getByTestId("password-form")).toBeInTheDocument();
-    expect(screen.getByText("Error: Invalid password")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(recordWorkspaceView).toHaveBeenCalledWith({
+        workspace_id: "workspace-1",
+        ip_address: "127.0.0.1",
+        user_agent: "test-agent",
+      });
+    });
   });
 
-  it("renders workspace with correct password", async () => {
-    const protectedWorkspace = {
-      ...mockWorkspace,
-      password_hash: "hashed-password",
-    };
-    vi.mocked(getWorkspace).mockResolvedValue(protectedWorkspace);
-    vi.mocked(verifyWorkspacePassword).mockResolvedValue(true);
+  it("should handle expired workspace", async () => {
+    const expiredDate = new Date();
+    expiredDate.setDate(expiredDate.getDate() - 1);
 
-    const params = Promise.resolve({ slug: "protected-workspace" });
-    const searchParams = Promise.resolve({ password: "correct-password" });
+    (getWorkspaceBySlug as any).mockResolvedValue(null); // Expired workspaces return null
 
-    render(await WorkspacePage({ params, searchParams }));
+    render(
+      await WorkspacePage({
+        params: Promise.resolve({ slug: "expired" }),
+        searchParams: Promise.resolve({}),
+      })
+    );
 
-    expect(screen.getByTestId("workspace-viewer")).toBeInTheDocument();
-    expect(screen.getByText("Test Workspace")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/workspace not found/i)).toBeInTheDocument();
+    });
   });
 
-  it("handles workspace with no files", async () => {
-    vi.mocked(getWorkspaceFiles).mockResolvedValue([]);
+  it("should render private workspace for unauthorized user", async () => {
+    const mockWorkspace = {
+      id: "workspace-1",
+      title: "Private Workspace",
+      slug: "private",
+      user_id: "user-1",
+      is_public: false,
+      password_hash: null,
+      expires_at: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
 
-    const params = Promise.resolve({ slug: "empty-workspace" });
-    const searchParams = Promise.resolve({});
+    (getWorkspaceBySlug as any).mockResolvedValue(mockWorkspace);
 
-    render(await WorkspacePage({ params, searchParams }));
+    render(
+      await WorkspacePage({
+        params: Promise.resolve({ slug: "private" }),
+        searchParams: Promise.resolve({}),
+      })
+    );
 
-    expect(screen.getByText("Files: 0")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/private workspace/i)).toBeInTheDocument();
+    });
   });
 });

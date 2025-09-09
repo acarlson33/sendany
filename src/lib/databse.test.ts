@@ -1,3 +1,5 @@
+// This file has been moved to database.test.ts - please use that file instead
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   createWorkspace,
