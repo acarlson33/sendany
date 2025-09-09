@@ -153,6 +153,12 @@ describe("CreateWorkspaceForm", () => {
     const createButton = screen.getByRole("button", {
       name: /create workspace/i,
     });
+    // seed valid content so the button becomes enabled
+    fireEvent.click(screen.getByText(/add text file/i));
+    fireEvent.change(
+      screen.getByPlaceholderText(/enter your text here/i),
+      { target: { value: "content" } }
+    );
     fireEvent.click(createButton);
 
     await waitFor(() => {
