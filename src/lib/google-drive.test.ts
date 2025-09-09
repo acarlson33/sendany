@@ -74,6 +74,7 @@ describe("GoogleDriveService", () => {
     it.skip("should reject unsupported file types", () => {
       // Enable when service enforces allowed MIME types
     });
+  });
 
   describe("Token Management", () => {
     it("should set credentials", () => {
