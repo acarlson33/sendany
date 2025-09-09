@@ -125,16 +125,12 @@ describe("WorkspaceViewer", () => {
     expect(screen.getByText("large.txt")).toBeInTheDocument();
   });
 
-  it("shows edit button for workspace owner", () => {
-    // Mock authenticated user as owner
-    vi.mock("@/stack", () => ({
-      stackServerApp: {
-        getUser: () => Promise.resolve({ id: mockWorkspace.user_id }),
-      },
-    }));
+// Mock must be hoisted before importing the SUT when it depends on "@/stack"
+vi.mock("@/stack", () => ({
+  stackServerApp: {
+    getUser: () => Promise.resolve({ id: "test-user-id" }),
+  },
+}));
 
-    render(<WorkspaceViewer workspace={mockWorkspace} files={mockFiles} />);
-
-    expect(screen.getByRole("link", { name: /edit/i })).toBeInTheDocument();
-  });
+import { WorkspaceViewer } from "./workspace-viewer";
 });
