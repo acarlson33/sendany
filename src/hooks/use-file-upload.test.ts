@@ -94,7 +94,7 @@ describe("useFileUpload", () => {
   it("should revoke object URLs when removing files", () => {
     const { result } = renderHook(() => useFileUpload());
 
-    const mockFile = new File(["content"], "test.txt", { type: "text/plain" });
+   const mockFile = new File(["content"], "test.png", { type: "image/png" });
 
     act(() => {
       result.current.addFiles([mockFile]);
@@ -109,7 +109,6 @@ describe("useFileUpload", () => {
 
     expect(URL.revokeObjectURL).toHaveBeenCalledWith(previewUrl);
   });
-
   it("should handle duplicate files", () => {
     const { result } = renderHook(() => useFileUpload());
 
