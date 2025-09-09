@@ -58,7 +58,6 @@ export async function createWorkspace(data: {
     data.is_public ?? true
   }, ${password_hash}, ${data.expires_at ?? null})
     RETURNING *
-  `
   `;
 
   return result[0] as Workspace;
@@ -68,7 +67,8 @@ export async function getWorkspaceBySlug(
   slug: string
 ): Promise<Workspace | null> {
   const result = await sql`
-    SELECT * FROM workspaces WHERE slug = ${slug} AND (expires_at IS NULL OR expires_at > NOW())
+    SELECT * FROM workspaces 
+    WHERE slug = ${slug} AND (expires_at IS NULL OR expires_at > NOW())
   `;
 
   return (result[0] as Workspace) || null;
@@ -86,27 +86,49 @@ export async function updateWorkspace(
   id: string,
   data: Partial<Omit<Workspace, "id" | "created_at" | "updated_at">>
 ): Promise<Workspace | null> {
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (data.title !== undefined) {
+    updates.push(`title = $${values.length + 1}`);
+    values.push(data.title);
+  }
+  if (data.slug !== undefined) {
+    updates.push(`slug = $${values.length + 1}`);
+    values.push(data.slug);
+  }
+  if (data.is_public !== undefined) {
+    updates.push(`is_public = $${values.length + 1}`);
+    values.push(data.is_public);
+  }
+  if (data.password_hash !== undefined) {
+    updates.push(`password_hash = $${values.length + 1}`);
+    values.push(data.password_hash);
+  }
+  if (data.expires_at !== undefined) {
+    updates.push(`expires_at = $${values.length + 1}`);
+    values.push(data.expires_at);
+  }
+
+  if (updates.length === 0) {
+    return await getWorkspaceById(id);
+  }
+
+  updates.push(`updated_at = NOW()`);
+  values.push(id);
+
   const result = await sql`
     UPDATE workspaces
-    SET
-      title = COALESCE(${data.title ?? null}, title),
-      slug = COALESCE(${data.slug ?? null}, slug),
-      is_public = COALESCE(${data.is_public ?? null}, is_public),
-      password_hash = COALESCE(${data.password_hash ?? null}, password_hash),
-      expires_at = COALESCE(${data.expires_at ?? null}, expires_at),
-      updated_at = NOW()
-    WHERE id = ${id}
+    SET ${updates.join(", ")}
+    WHERE id = ${values[values.length - 1]}
     RETURNING *
   `;
   return (result[0] as Workspace) || null;
 }
 
 export async function deleteWorkspace(id: string): Promise<boolean> {
-  const result = await sql`
-    DELETE FROM workspaces WHERE id = ${id}
-  `;
-
-  return (result as any).rowCount > 0;
+  const result = await sql`DELETE FROM workspaces WHERE id = ${id}`;
+  return result.length > 0;
 }
 
 export async function getUserWorkspaces(userId: string): Promise<Workspace[]> {
@@ -144,7 +166,7 @@ export async function createWorkspaceFile(data: {
     FROM workspace_files 
     WHERE workspace_id = ${data.workspace_id}
   `;
-  const file_order = orderResult[0].next_order;
+  const file_order = (orderResult[0] as any).next_order;
 
   const result = await sql`
     INSERT INTO workspace_files (id, workspace_id, name, content, language, type, file_order, google_drive_file_id)
@@ -177,39 +199,58 @@ export async function updateWorkspaceFile(
     Omit<WorkspaceFile, "id" | "workspace_id" | "created_at" | "updated_at">
   >
 ): Promise<WorkspaceFile | null> {
-  // Use template literal with sql function
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (data.name !== undefined) {
+    updates.push(`name = $${values.length + 1}`);
+    values.push(data.name);
+  }
+  if (data.content !== undefined) {
+    updates.push(`content = $${values.length + 1}`);
+    values.push(data.content);
+  }
+  if (data.language !== undefined) {
+    updates.push(`language = $${values.length + 1}`);
+    values.push(data.language);
+  }
+  if (data.type !== undefined) {
+    updates.push(`type = $${values.length + 1}`);
+    values.push(data.type);
+  }
+  if (data.file_order !== undefined) {
+    updates.push(`file_order = $${values.length + 1}`);
+    values.push(data.file_order);
+  }
+
+  if (updates.length === 0) {
+    const result = await sql`SELECT * FROM workspace_files WHERE id = ${id}`;
+    return (result[0] as WorkspaceFile) || null;
+  }
+
+  updates.push(`updated_at = NOW()`);
+  values.push(id);
+
   const result = await sql`
     UPDATE workspace_files
-    SET
-      name = COALESCE(${data.name ?? null}, name),
-      content = COALESCE(${data.content ?? null}, content),
-      language = COALESCE(${data.language ?? null}, language),
-      type = COALESCE(${data.type ?? null}, type),
-      file_order = COALESCE(${data.file_order ?? null}, file_order),
-      updated_at = NOW()
-    WHERE id = ${id}
+    SET ${updates.join(", ")}
+    WHERE id = ${values[values.length - 1]}
     RETURNING *
   `;
-
   return (result[0] as WorkspaceFile) || null;
 }
 
 export async function deleteWorkspaceFile(id: string): Promise<boolean> {
-  const result = await sql`
-    DELETE FROM workspace_files WHERE id = ${id}
-  `;
-
-  return (result as any).rowCount > 0;
+  const result = await sql`DELETE FROM workspace_files WHERE id = ${id}`;
+  return result.length > 0;
 }
 
 export async function deleteWorkspaceFiles(
   workspaceId: string
 ): Promise<boolean> {
-  const result = await sql`
-    DELETE FROM workspace_files WHERE workspace_id = ${workspaceId}
-  `;
-
-  return (result as any).rowCount >= 0;
+  const result =
+    await sql`DELETE FROM workspace_files WHERE workspace_id = ${workspaceId}`;
+  return true; // Always return true for bulk delete
 }
 
 // View tracking

@@ -1,10 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@/test/test-utils";
+import { createMockWorkspace } from "@/test/test-utils";
 import { WorkspaceViewer } from "./workspace-viewer";
-import {
-  createMockWorkspace,
-  createMockWorkspaceFile,
-} from "@/test/test-utils";
 
 describe("WorkspaceViewer", () => {
   const mockWorkspace = createMockWorkspace({
@@ -125,12 +122,10 @@ describe("WorkspaceViewer", () => {
     expect(screen.getByText("large.txt")).toBeInTheDocument();
   });
 
-// Mock must be hoisted before importing the SUT when it depends on "@/stack"
-vi.mock("@/stack", () => ({
-  stackServerApp: {
-    getUser: () => Promise.resolve({ id: "test-user-id" }),
-  },
-}));
-
-import { WorkspaceViewer } from "./workspace-viewer";
+  // Mock must be hoisted before importing the SUT when it depends on "@/stack"
+  vi.mock("@/stack", () => ({
+    stackServerApp: {
+      getUser: () => Promise.resolve({ id: "test-user-id" }),
+    },
+  }));
 });
