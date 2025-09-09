@@ -54,10 +54,11 @@ export async function createWorkspace(data: {
 
   const result = await sql`
     INSERT INTO workspaces (id, title, slug, user_id, is_public, password_hash, expires_at)
-    VALUES (${id}, ${data.title}, ${slug}, ${data.user_id || null}, ${
-    data.is_public || true
-  }, ${password_hash}, ${data.expires_at || null})
+    VALUES (${id}, ${data.title}, ${slug}, ${data.user_id ?? null}, ${
+    data.is_public ?? true
+  }, ${password_hash}, ${data.expires_at ?? null})
     RETURNING *
+  `
   `;
 
   return result[0] as Workspace;
