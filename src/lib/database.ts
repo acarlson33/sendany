@@ -177,49 +177,16 @@ export async function updateWorkspaceFile(
     Omit<WorkspaceFile, "id" | "workspace_id" | "created_at" | "updated_at">
   >
 ): Promise<WorkspaceFile | null> {
-  const updates: string[] = [];
-  const values: any[] = [];
-  let paramIndex = 1;
-
-  if (data.name !== undefined) {
-    updates.push(`name = $${paramIndex++}`);
-    values.push(data.name);
-  }
-
-  if (data.content !== undefined) {
-    updates.push(`content = $${paramIndex++}`);
-    values.push(data.content);
-  }
-
-  if (data.language !== undefined) {
-    updates.push(`language = $${paramIndex++}`);
-    values.push(data.language);
-  }
-
-  if (data.type !== undefined) {
-    updates.push(`type = $${paramIndex++}`);
-    values.push(data.type);
-  }
-
-  if (data.file_order !== undefined) {
-    updates.push(`file_order = $${paramIndex++}`);
-    values.push(data.file_order);
-  }
-
-  if (updates.length === 0) return null;
-
-  updates.push(`updated_at = NOW()`);
-  values.push(id);
-
-  if (updates.length === 0) return null;
-
-  updates.push(`updated_at = NOW()`);
-
   // Use template literal with sql function
-  const setClauses = updates.join(", ");
   const result = await sql`
-    UPDATE workspace_files 
-    SET ${sql.unsafe(setClauses)}
+    UPDATE workspace_files
+    SET
+      name = COALESCE(${data.name ?? null}, name),
+      content = COALESCE(${data.content ?? null}, content),
+      language = COALESCE(${data.language ?? null}, language),
+      type = COALESCE(${data.type ?? null}, type),
+      file_order = COALESCE(${data.file_order ?? null}, file_order),
+      updated_at = NOW()
     WHERE id = ${id}
     RETURNING *
   `;
