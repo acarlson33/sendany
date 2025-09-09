@@ -3,14 +3,10 @@ import { beforeAll, afterEach, afterAll, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 import { server } from "./mocks/server";
 
-// Mock environment variables
-vi.mock("process", () => ({
-  env: {
-    DATABASE_URL: "postgresql://test:test@localhost:5432/test",
-    STACK_SECRET_SERVER_KEY: "test-secret",
-    STACK_PROJECT_ID: "test-project-id",
-  },
-}));
+// Environment variables
+process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/test";
+process.env.STACK_SECRET_SERVER_KEY = "test-secret";
+process.env.STACK_PROJECT_ID = "test-project-id";
 
 // Mock Stack Auth
 vi.mock("@stackframe/stack", () => ({
