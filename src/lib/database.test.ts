@@ -50,10 +50,13 @@ vi.doMock("@neondatabase/serverless", () => ({
 describe("Database Functions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSql = vi.fn();
     (nanoid as any).mockReturnValue("mock-id");
     (bcrypt.hash as any).mockResolvedValue("hashed-password");
     (bcrypt.compare as any).mockResolvedValue(true);
   });
+  // …rest of the tests…
+});
 
   describe("Workspace Operations", () => {
     it("should create a workspace", async () => {
