@@ -72,12 +72,14 @@ describe("HomePage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows sign in link for unauthenticated user", async () => {
+  it("does not show dashboard link for unauthenticated user", async () => {
     vi.mocked(stackServerApp.getUser).mockResolvedValue(null);
 
     render(await HomePage());
 
-    expect(screen.getByRole("link", { name: /sign in/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /dashboard/i })
+    ).not.toBeInTheDocument();
   });
 
   it("contains proper meta information", () => {
