@@ -125,9 +125,7 @@ describe("useFileUpload", () => {
       result.current.addFiles([mockFile]);
     });
 
-    // Should still have 2 files (allowing duplicates by design or preventing them)
-    // This depends on the implementation - adjust based on actual behavior
-    expect(result.current.files).toHaveLength(2);
+    expect(result.current.files).toHaveLength(1);
   });
 
   it("should handle file validation", () => {
