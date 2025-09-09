@@ -127,11 +127,15 @@ describe("CreateWorkspaceForm", () => {
 
   it("disables form when loading", async () => {
     render(<CreateWorkspaceForm {...defaultProps} />);
-
     const createButton = screen.getByRole("button", {
       name: /create workspace/i,
     });
-
+    // Provide valid content to enable the button
+    fireEvent.click(screen.getByText(/add text file/i));
+    fireEvent.change(
+      screen.getByPlaceholderText(/enter your text here/i),
+      { target: { value: "content" } }
+    );
     // Trigger creation to set loading state
     fireEvent.click(createButton);
 
