@@ -86,53 +86,18 @@ export async function updateWorkspace(
   id: string,
   data: Partial<Omit<Workspace, "id" | "created_at" | "updated_at">>
 ): Promise<Workspace | null> {
-  const updates: string[] = [];
-  const values: any[] = [];
-  let paramIndex = 1;
-
-  if (data.title !== undefined) {
-    updates.push(`title = $${paramIndex++}`);
-    values.push(data.title);
-  }
-
-  if (data.slug !== undefined) {
-    updates.push(`slug = $${paramIndex++}`);
-    values.push(data.slug);
-  }
-
-  if (data.is_public !== undefined) {
-    updates.push(`is_public = $${paramIndex++}`);
-    values.push(data.is_public);
-  }
-
-  if (data.password_hash !== undefined) {
-    updates.push(`password_hash = $${paramIndex++}`);
-    values.push(data.password_hash);
-  }
-
-  if (data.expires_at !== undefined) {
-    updates.push(`expires_at = $${paramIndex++}`);
-    values.push(data.expires_at);
-  }
-
-  if (updates.length === 0) return null;
-
-  updates.push(`updated_at = NOW()`);
-  values.push(id);
-
-  if (updates.length === 0) return null;
-
-  updates.push(`updated_at = NOW()`);
-
-  // Use template literal with sql function
-  const setClauses = updates.join(", ");
   const result = await sql`
-    UPDATE workspaces 
-    SET ${sql.unsafe(setClauses)}
+    UPDATE workspaces
+    SET
+      title = COALESCE(${data.title ?? null}, title),
+      slug = COALESCE(${data.slug ?? null}, slug),
+      is_public = COALESCE(${data.is_public ?? null}, is_public),
+      password_hash = COALESCE(${data.password_hash ?? null}, password_hash),
+      expires_at = COALESCE(${data.expires_at ?? null}, expires_at),
+      updated_at = NOW()
     WHERE id = ${id}
     RETURNING *
   `;
-
   return (result[0] as Workspace) || null;
 }
 
