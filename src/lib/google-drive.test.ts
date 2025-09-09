@@ -59,7 +59,7 @@ describe("GoogleDriveService", () => {
       const result = driveService.validateFile(file, currentWorkspaceSize, 0);
 
       expect(result.valid).toBe(false);
-      expect(result.error).toContain("Workspace storage");
+      expect(result.error).toMatch(/Workspace size would exceed limit/i);
     });
 
     it("should reject file causing user storage limit to be exceeded", () => {
