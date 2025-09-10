@@ -55,7 +55,6 @@ describe("/api/cleanup Route", () => {
 
       vi.mocked(getExpiredWorkspaces).mockResolvedValue(mockExpiredWorkspaces);
 
-      const request = new NextRequest("http://localhost:3000/api/cleanup");
       const response = await GET();
       const data = await response.json();
 

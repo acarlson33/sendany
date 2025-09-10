@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 
@@ -41,7 +41,7 @@ import {
 } from "@/lib/database";
 
 // Get the mocked sql function
-const mockSql = vi.fn();
+let mockSql = vi.fn();
 
 vi.doMock("@neondatabase/serverless", () => ({
   neon: () => mockSql,
@@ -55,8 +55,6 @@ describe("Database Functions", () => {
     (bcrypt.hash as any).mockResolvedValue("hashed-password");
     (bcrypt.compare as any).mockResolvedValue(true);
   });
-  // …rest of the tests…
-});
 
   describe("Workspace Operations", () => {
     it("should create a workspace", async () => {
@@ -157,7 +155,7 @@ describe("Database Functions", () => {
     });
 
     it("should delete workspace", async () => {
-      mockSql.mockResolvedValue({ rowCount: 1 });
+      mockSql.mockResolvedValue([{ id: "workspace-1" }]);
 
       const result = await deleteWorkspace("workspace-1");
 
@@ -329,7 +327,7 @@ describe("Database Functions", () => {
     });
 
     it("should delete workspace file", async () => {
-      mockSql.mockResolvedValue({ rowCount: 1 });
+      mockSql.mockResolvedValue([{ id: "file-1" }]);
 
       const result = await deleteWorkspaceFile("file-1");
 
@@ -337,7 +335,7 @@ describe("Database Functions", () => {
     });
 
     it("should delete all workspace files", async () => {
-      mockSql.mockResolvedValue({ rowCount: 2 });
+      mockSql.mockResolvedValue([]);
 
       const result = await deleteWorkspaceFiles("workspace-1");
 
@@ -426,11 +424,11 @@ describe("Database Functions", () => {
       // Mock getExpiredWorkspaces
       mockSql.mockResolvedValueOnce(expiredWorkspaces);
       // Mock deleteWorkspaceFiles
-      mockSql.mockResolvedValueOnce({ rowCount: 1 });
+      mockSql.mockResolvedValueOnce([]);
       // Mock delete views
-      mockSql.mockResolvedValueOnce({ rowCount: 1 });
+      mockSql.mockResolvedValueOnce([]);
       // Mock deleteWorkspace
-      mockSql.mockResolvedValueOnce({ rowCount: 1 });
+      mockSql.mockResolvedValueOnce([{ id: "expired-1" }]);
 
       const result = await cleanupExpiredWorkspaces();
 

@@ -12,11 +12,13 @@ vi.mock("@/stack", () => ({
 
 // Mock Next.js Link
 vi.mock("next/link", () => {
-  return ({ children, href, ...props }: any) => (
+  const MockLink = ({ children, href, ...props }: any) => (
     <a href={href} {...props}>
       {children}
     </a>
   );
+  MockLink.displayName = "MockLink";
+  return MockLink;
 });
 
 // Mock components
@@ -82,17 +84,17 @@ describe("HomePage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("contains proper meta information", () => {
+  it("contains proper meta information", async () => {
     // This test would check that metadata is properly set
     // Since it's exported from the file, we can test the metadata object
-    const { metadata } = require("./page");
+    const { metadata } = await import("./page");
 
     expect(metadata.title).toBe("SendAny - Share anything with anyone");
     expect(metadata.description).toContain(
       "The perfect combination of Google Drive, Pastebin, and GitHub Gist"
     );
     expect(metadata.keywords).toContain("file sharing");
-    expect(metadata.openGraph.title).toBe(
+    expect(metadata.openGraph?.title ?? "").toBe(
       "SendAny - Share anything with anyone"
     );
   });
